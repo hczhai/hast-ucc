@@ -134,7 +134,12 @@ struct ThreadPartitioning {
 
 template <uint8_t MaxL> struct LayeredThreading {
     static constexpr uint32_t spin = 2048;
-    using pair_t = std::array<std::pair<std::atomic<uint32_t>, std::atomic<uint32_t>>, (MaxL + 7) / 8 * 8>;
+    struct alignas(128) pair_t {
+        std::array<std::pair<std::atomic<uint32_t>, std::atomic<uint32_t>>, (MaxL + 7) / 8 * 8> vals;
+        std::pair<std::atomic<uint32_t>, std::atomic<uint32_t>>& operator[](size_t idx) {
+            return vals[idx];
+        }
+    };
     std::array<uint32_t, MaxL> n_threads;
     std::array<uint32_t, MaxL + 1> post_prods;
     pair_t *nwps;
@@ -190,7 +195,7 @@ template <uint8_t MaxL> struct LayeredThreading {
 };
 
 template <typename FL, int16_t L = 36, int16_t SL = 72> struct Tensordot {
-    static constexpr size_t part_n = 9984, part_k = 384, part_m = 192, kp_n = 192;
+    static constexpr size_t part_n = 9984, part_k = 512, part_m = 512, kp_n = 192;
     static constexpr inline SymmFactor<L, sizeof(ubit_t) * 8> prex = {};
     int16_t ndim_a, ndim_b, ndim_c, nctr;
     std::array<size_t, L> shape_a, shape_b, shape_c;
@@ -1093,9 +1098,9 @@ template <typename FL, int16_t L = 36, int16_t SL = 72> struct Tensordot {
     std::array<double, 5> parallel_compute(int16_t n_threads) noexcept {
         ThreadPartitioning gt(n_threads, len_m, len_n, len_k);
         const int16_t np_n = gt.factors[0], np_m = gt.factors[1], np_n2 = gt.factors[2];
-        constexpr size_t ker_kn = 4, ker_n = 4, ker_m = 4, ker_k = 4;
+        constexpr size_t ker_kn = 4, ker_n = 4, ker_m = 4, ker_k = 4, ker_c = 4;
         const int16_t np_nm = np_n * np_m, np_mn2 = np_m * np_n2;
-        constexpr size_t n_align = 256;
+        constexpr size_t n_align = 64;
         const size_t lp_m = std::min(len_m, part_m), lp_n = std::min(len_n, part_n);
         const size_t lp_n2 = std::min(len_n, kp_n), lp_k = std::min(len_k, part_k);
         const size_t nsm =
@@ -1118,7 +1123,7 @@ template <typename FL, int16_t L = 36, int16_t SL = 72> struct Tensordot {
             .parallel_run([&](uint32_t thread_id, LayeredThreading<3> *layered) {
                 Timer _t;
                 _t.get_time();
-                const size_t p_c = (len_c + n_threads - 1) / n_threads;
+                const size_t p_c = ((len_c + n_threads - 1) / n_threads + ker_c - 1) / ker_c * ker_c;
                 const size_t pst_c = thread_id * p_c, ped_c = std::min(len_c, (thread_id + 1) * p_c);
                 if (beta == 0.0) {
                     if (ped_c > pst_c)

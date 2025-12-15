@@ -17,146 +17,141 @@
 #
 #
 
-try:
+import ctypes, os
+_path = os.path.dirname(__file__)
+_lib = ctypes.CDLL(os.path.join(_path, "..", "..", "build", "libhast-ctr.so"))
 
-    import ctypes, os
-    _path = os.path.dirname(__file__)
-    _lib = ctypes.CDLL(os.path.join(_path, "..", "..", "build", "libhast-ctr.so"))
+import numpy as np
 
-    import numpy as np
+_lib.tensordot.argtypes = (
+    ctypes.c_int16, # ndim_a
+    ctypes.c_int16, # ndim_b
+    ctypes.POINTER(ctypes.c_size_t), # shape_a
+    ctypes.POINTER(ctypes.c_size_t), # shape_b
+    ctypes.POINTER(ctypes.c_size_t), # strides_a
+    ctypes.POINTER(ctypes.c_size_t), # strides_b
+    ctypes.c_int16, # nctr
+    ctypes.POINTER(ctypes.c_int16), # idx_a
+    ctypes.POINTER(ctypes.c_int16), # idx_b
+    ctypes.POINTER(ctypes.c_int16), # tr_c
+    ctypes.POINTER(ctypes.c_double), # a
+    ctypes.POINTER(ctypes.c_double), # b
+    ctypes.POINTER(ctypes.c_double), # c
+    ctypes.c_double, # alpha
+    ctypes.c_double, # beta
+    ctypes.POINTER(ctypes.c_size_t), # strides_c
+    ctypes.POINTER(ctypes.c_int16), # symm_desc_a
+    ctypes.POINTER(ctypes.c_int16), # symm_desc_b
+    ctypes.POINTER(ctypes.c_int16), # symm_desc_c
+)
+_lib.transpose.argtypes = (
+    ctypes.c_int16, # ndim_a
+    ctypes.POINTER(ctypes.c_size_t), # shape_a
+    ctypes.POINTER(ctypes.c_size_t), # strides_a
+    ctypes.POINTER(ctypes.c_size_t), # strides_b
+    ctypes.POINTER(ctypes.c_int16), # tr_b
+    ctypes.POINTER(ctypes.c_double), # a
+    ctypes.POINTER(ctypes.c_double), # b
+    ctypes.c_double, # alpha
+    ctypes.c_double, # beta
+    ctypes.POINTER(ctypes.c_int16), # symm_desc_a
+    ctypes.POINTER(ctypes.c_int16), # symm_desc_b
+)
+_lib.tensordot_nflops.argtypes = (
+    ctypes.c_int16, # ndim_a
+    ctypes.c_int16, # ndim_b
+    ctypes.POINTER(ctypes.c_size_t), # shape_a
+    ctypes.POINTER(ctypes.c_size_t), # shape_b
+    ctypes.POINTER(ctypes.c_size_t), # strides_a
+    ctypes.POINTER(ctypes.c_size_t), # strides_b
+    ctypes.c_int16, # nctr
+    ctypes.POINTER(ctypes.c_int16), # idx_a
+    ctypes.POINTER(ctypes.c_int16), # idx_b
+    ctypes.POINTER(ctypes.c_int16), # tr_c
+    ctypes.POINTER(ctypes.c_size_t), # strides_c
+    ctypes.POINTER(ctypes.c_int16), # symm_desc_a
+    ctypes.POINTER(ctypes.c_int16), # symm_desc_b
+    ctypes.POINTER(ctypes.c_int16), # symm_desc_c
+)
+_lib.reset_timer.argtypes = ()
+_lib.check_timer.argtypes = (
+    ctypes.POINTER(ctypes.c_double), # tsymm
+    ctypes.POINTER(ctypes.c_double), # tgemm
+)
+_lib.tensordot.restype = ctypes.c_int
+_lib.transpose.restype = ctypes.c_int
+_lib.reset_timer.restype = ctypes.c_int
+_lib.check_timer.restype = ctypes.c_int
 
-    _lib.tensordot.argtypes = (
-        ctypes.c_int16, # ndim_a
-        ctypes.c_int16, # ndim_b
-        ctypes.POINTER(ctypes.c_size_t), # shape_a
-        ctypes.POINTER(ctypes.c_size_t), # shape_b
-        ctypes.POINTER(ctypes.c_size_t), # strides_a
-        ctypes.POINTER(ctypes.c_size_t), # strides_b
-        ctypes.c_int16, # nctr
-        ctypes.POINTER(ctypes.c_int16), # idx_a
-        ctypes.POINTER(ctypes.c_int16), # idx_b
-        ctypes.POINTER(ctypes.c_int16), # tr_c
-        ctypes.POINTER(ctypes.c_double), # a
-        ctypes.POINTER(ctypes.c_double), # b
-        ctypes.POINTER(ctypes.c_double), # c
-        ctypes.c_double, # alpha
-        ctypes.c_double, # beta
-        ctypes.POINTER(ctypes.c_size_t), # strides_c
-        ctypes.POINTER(ctypes.c_int16), # symm_desc_a
-        ctypes.POINTER(ctypes.c_int16), # symm_desc_b
-        ctypes.POINTER(ctypes.c_int16), # symm_desc_c
+def _tensordot(ndim_a, ndim_b, shape_a, shape_b, strides_a, strides_b, nctr, idx_a, idx_b, tr_c, a, b, c, alpha,
+                beta, strides_c, symm_a, symm_b, symm_c):
+    return _lib.tensordot(
+        ctypes.c_int16(ndim_a),
+        ctypes.c_int16(ndim_b),
+        np.array(shape_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(shape_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(strides_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(strides_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        ctypes.c_int16(nctr),
+        np.array(idx_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(idx_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(tr_c, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        a.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        b.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        c.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        ctypes.c_double(alpha),
+        ctypes.c_double(beta),
+        np.array(strides_c, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(symm_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(symm_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(symm_c, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
     )
-    _lib.transpose.argtypes = (
-        ctypes.c_int16, # ndim_a
-        ctypes.POINTER(ctypes.c_size_t), # shape_a
-        ctypes.POINTER(ctypes.c_size_t), # strides_a
-        ctypes.POINTER(ctypes.c_size_t), # strides_b
-        ctypes.POINTER(ctypes.c_int16), # tr_b
-        ctypes.POINTER(ctypes.c_double), # a
-        ctypes.POINTER(ctypes.c_double), # b
-        ctypes.c_double, # alpha
-        ctypes.c_double, # beta
-        ctypes.POINTER(ctypes.c_int16), # symm_desc_a
-        ctypes.POINTER(ctypes.c_int16), # symm_desc_b
-    )
-    _lib.tensordot_nflops.argtypes = (
-        ctypes.c_int16, # ndim_a
-        ctypes.c_int16, # ndim_b
-        ctypes.POINTER(ctypes.c_size_t), # shape_a
-        ctypes.POINTER(ctypes.c_size_t), # shape_b
-        ctypes.POINTER(ctypes.c_size_t), # strides_a
-        ctypes.POINTER(ctypes.c_size_t), # strides_b
-        ctypes.c_int16, # nctr
-        ctypes.POINTER(ctypes.c_int16), # idx_a
-        ctypes.POINTER(ctypes.c_int16), # idx_b
-        ctypes.POINTER(ctypes.c_int16), # tr_c
-        ctypes.POINTER(ctypes.c_size_t), # strides_c
-        ctypes.POINTER(ctypes.c_int16), # symm_desc_a
-        ctypes.POINTER(ctypes.c_int16), # symm_desc_b
-        ctypes.POINTER(ctypes.c_int16), # symm_desc_c
-    )
-    _lib.reset_timer.argtypes = ()
-    _lib.check_timer.argtypes = (
-        ctypes.POINTER(ctypes.c_double), # tsymm
-        ctypes.POINTER(ctypes.c_double), # tgemm
-    )
-    _lib.tensordot.restype = ctypes.c_int
-    _lib.transpose.restype = ctypes.c_int
-    _lib.reset_timer.restype = ctypes.c_int
-    _lib.check_timer.restype = ctypes.c_int
 
-    def _tensordot(ndim_a, ndim_b, shape_a, shape_b, strides_a, strides_b, nctr, idx_a, idx_b, tr_c, a, b, c, alpha,
-                   beta, strides_c, symm_a, symm_b, symm_c):
-        return _lib.tensordot(
-            ctypes.c_int16(ndim_a),
-            ctypes.c_int16(ndim_b),
-            np.array(shape_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(shape_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(strides_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(strides_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            ctypes.c_int16(nctr),
-            np.array(idx_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(idx_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(tr_c, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            a.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-            b.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-            c.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-            ctypes.c_double(alpha),
-            ctypes.c_double(beta),
-            np.array(strides_c, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(symm_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(symm_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(symm_c, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-        )
+def _transpose(ndim_a, shape_a, strides_a, strides_b, tr_b, a, b, alpha,
+                beta,  symm_a, symm_b):
+    return _lib.transpose(
+        ctypes.c_int16(ndim_a),
+        np.array(shape_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(strides_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(strides_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(tr_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        a.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        b.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        ctypes.c_double(alpha),
+        ctypes.c_double(beta),
+        np.array(symm_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(symm_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+    )
 
-    def _transpose(ndim_a, shape_a, strides_a, strides_b, tr_b, a, b, alpha,
-                   beta,  symm_a, symm_b):
-        return _lib.transpose(
-            ctypes.c_int16(ndim_a),
-            np.array(shape_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(strides_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(strides_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(tr_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            a.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-            b.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-            ctypes.c_double(alpha),
-            ctypes.c_double(beta),
-            np.array(symm_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(symm_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-        )
-    
-    def _tensordot_nflops(ndim_a, ndim_b, shape_a, shape_b, strides_a, strides_b, nctr, idx_a, idx_b, tr_c,
-                   strides_c, symm_a, symm_b, symm_c):
-        return _lib.tensordot_nflops(
-            ctypes.c_int16(ndim_a),
-            ctypes.c_int16(ndim_b),
-            np.array(shape_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(shape_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(strides_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(strides_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            ctypes.c_int16(nctr),
-            np.array(idx_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(idx_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(tr_c, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(strides_c, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
-            np.array(symm_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(symm_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            np.array(symm_c, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-        )
-    
-    def reset_timer():
-        return _lib.reset_timer()
-    
-    def check_timer():
-        tsymm, tgemm = np.zeros((1, )), np.zeros((1, ))
-        _lib.check_timer(
-            tsymm.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-            tgemm.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        )
-        return float(tsymm[0]), float(tgemm[0])
+def _tensordot_nflops(ndim_a, ndim_b, shape_a, shape_b, strides_a, strides_b, nctr, idx_a, idx_b, tr_c,
+                strides_c, symm_a, symm_b, symm_c):
+    return _lib.tensordot_nflops(
+        ctypes.c_int16(ndim_a),
+        ctypes.c_int16(ndim_b),
+        np.array(shape_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(shape_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(strides_a, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(strides_b, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        ctypes.c_int16(nctr),
+        np.array(idx_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(idx_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(tr_c, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(strides_c, dtype=int).ctypes.data_as(ctypes.POINTER(ctypes.c_size_t)),
+        np.array(symm_a, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(symm_b, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+        np.array(symm_c, dtype=np.int16).ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+    )
 
-except OSError:
-    pass
+def reset_timer():
+    return _lib.reset_timer()
+
+def check_timer():
+    tsymm, tgemm = np.zeros((1, )), np.zeros((1, ))
+    _lib.check_timer(
+        tsymm.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        tgemm.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+    )
+    return float(tsymm[0]), float(tgemm[0])
 
 def symm_tensor_shape(n_occ, n_virt, n_cas, ndim, xsymm):
     xshape = [0] * ndim
