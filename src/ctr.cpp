@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
-*/
+ */
 
 #include <algorithm>
 #include <array>
@@ -136,9 +136,7 @@ template <uint8_t MaxL> struct LayeredThreading {
     static constexpr uint32_t spin = 2048;
     struct alignas(128) pair_t {
         std::array<std::pair<std::atomic<uint32_t>, std::atomic<uint32_t>>, (MaxL + 7) / 8 * 8> vals;
-        std::pair<std::atomic<uint32_t>, std::atomic<uint32_t>>& operator[](size_t idx) {
-            return vals[idx];
-        }
+        std::pair<std::atomic<uint32_t>, std::atomic<uint32_t>> &operator[](size_t idx) { return vals[idx]; }
     };
     std::array<uint32_t, MaxL> n_threads;
     std::array<uint32_t, MaxL + 1> post_prods;
